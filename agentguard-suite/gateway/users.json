@@ -1,0 +1,27 @@
+{
+  "admin": {
+    "username": "admin",
+    "name": "Administrator",
+    "password_hash": "pbkdf2_sha256$100000$7156e7988d83666692460ecfea3d07a7$2f2a1cf47a4b95fa2b9d8b20917a384bdb7f73bc08eeb03c65be859457a0f3ab",
+    "allowed_projects": [
+      "project1",
+      "project2"
+    ]
+  },
+  "analyst1": {
+    "username": "analyst1",
+    "name": "UPI Fraud Analyst",
+    "password_hash": "pbkdf2_sha256$100000$f44c7984a73caab3c5bf534ca795f7e0$cd884f1697dfceb373c2b18a934af8999f36b26cdaaa9b41ec7ad757cab5f452",
+    "allowed_projects": [
+      "project1"
+    ]
+  },
+  "analyst2": {
+    "username": "analyst2",
+    "name": "Money Map Analyst",
+    "password_hash": "pbkdf2_sha256$100000$f7e44257f568973c5c465e739c541561$f7000e8e5a88a1befb83901b08631fd4ee86024b107395ae9696b8c8d472895e",
+    "allowed_projects": [
+      "project2"
+    ]
+  }
+}

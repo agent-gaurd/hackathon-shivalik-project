@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentGuard Suite | Unified Defense Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070a13;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --card-border: rgba(56, 189, 248, 0.18);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --green: #10b981;
+      --red: #ef4444;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-image: radial-gradient(circle at 50% 10%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
+                        radial-gradient(circle at 10% 90%, rgba(168, 85, 247, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+      padding: 24px;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .portal-container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header */
+    .portal-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .portal-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 8px 18px;
+      border-radius: 30px;
+      margin-bottom: 16px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .portal-logo span { font-size: 20px; }
+    .portal-logo h2 { font-size: 14px; font-weight: 700; letter-spacing: 0.5px; color: var(--accent); }
+    .portal-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .portal-header p {
+      color: var(--muted);
+      font-size: 14.5px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Health Pill */
+    .health-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .health-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .dot.down { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+    /* Project Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+
+    .proj-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(12px);
+    }
+    .proj-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: transparent;
+      transition: 0.25s;
+    }
+    .proj-card:hover:not(.disabled) {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.2);
+    }
+    .proj-card.selected {
+      border-color: var(--accent);
+      background: rgba(18, 30, 52, 0.9);
+      box-shadow: 0 0 0 2px var(--accent), 0 14px 35px rgba(56, 189, 248, 0.3);
+    }
+    .proj-card.selected::before {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+    }
+    .proj-card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.6);
+    }
+
+    .proj-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .proj-icon {
+      font-size: 26px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .proj-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-p1 { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-p2 { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    .proj-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .proj-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+      flex: 1;
+    }
+    .proj-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: auto;
+    }
+    .feat-tag {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* Auth Box */
+    .auth-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .input-field {
+      width: 100%;
+      background: rgba(10, 14, 24, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: 0.2s;
+    }
+    .input-field:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+
+    .btn-launch {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #04101e;
+      border: none;
+      font-weight: 700;
+      font-size: 14.5px;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 6px;
+      box-shadow: 0 4px 15px var(--accent-glow);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-launch:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5); }
+    .btn-launch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--red);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    /* Demo Quick Credentials */
+    .demo-creds {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .cred-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11.5px;
+      transition: 0.15s;
+    }
+    .cred-btn:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent); color: var(--accent); }
+
+    /* Logged In View */
+    .logged-in-panel {
+      display: none;
+      text-align: center;
+      padding: 10px;
+    }
+    .user-avatar-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 8px 18px;
+      border-radius: 30px;
+      margin-bottom: 14px;
+      font-size: 13.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="portal-container">
+    <!-- Header -->
+    <div class="portal-header">
+      <div class="portal-logo">
+        <span>🛡️</span>
+        <h2>AGENTGUARD SUITE</h2>
+      </div>
+      <h1>Unified Defense Gateway</h1>
+      <p>Select your target intelligence platform and authenticate with your analyst credentials.</p>
+      
+      <div class="health-bar">
+        <div class="health-item">
+          <span class="dot" id="dotP1"></span>
+          <span>Project 1 Core (:8001)</span>
+        </div>
+        <div class="health-item">
+          <span class="dot" id="dotP2"></span>
+          <span>Project 2 Money Map (:8002)</span>
+        </div>
+        <div class="health-item">
+          <span class="dot" id="dotGw"></span>
+          <span>Gateway (:9000)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div class="error-banner" id="errorBanner"></div>
+
+    <!-- Project Selector Cards -->
+    <div class="cards-grid">
+      <!-- Project 1 Card -->
+      <div class="proj-card selected" id="cardP1" onclick="selectProject('project1')">
+        <div class="proj-header">
+          <div class="proj-icon">⚡</div>
+          <span class="proj-badge badge-p1">Project 1</span>
+        </div>
+        <div class="proj-title">AgentGuard Core Engine</div>
+        <div class="proj-desc">
+          Real-time 6-agent pre-transaction fraud interceptor. Evaluates UPI/Net-banking payments via XGBoost, Isolation Forest, live graph anomaly detection, and tamper-evident SHA-256 audit ledger.
+        </div>
+        <div class="proj-features">
+          <span class="feat-tag">6 AI Agents</span>
+          <span class="feat-tag">WebSocket Feed</span>
+          <span class="feat-tag">PSI Drift Monitor</span>
+          <span class="feat-tag">Audit Ledger</span>
+        </div>
+      </div>
+
+      <!-- Project 2 Card -->
+      <div class="proj-card" id="cardP2" onclick="selectProject('project2')">
+        <div class="proj-header">
+          <div class="proj-icon">🕸️</div>
+          <span class="proj-badge badge-p2">Project 2</span>
+        </div>
+        <div class="proj-title">Money Map & Policy Console</div>
+        <div class="proj-desc">
+          Interactive money-flow graph explorer and YAML-driven policy rule simulator. Maps mule account fan-in rings, device-sharing farms, and deep customer behavioral risk profiles.
+        </div>
+        <div class="proj-features">
+          <span class="feat-tag">Money Flow Graph</span>
+          <span class="feat-tag">Mule Ring Clustering</span>
+          <span class="feat-tag">Policy Engine</span>
+          <span class="feat-tag">Risk Profiling</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth Form Box -->
+    <div class="auth-box">
+      <!-- Anonymous Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="username">Analyst Username</label>
+            <input type="text" id="username" class="input-field mono" placeholder="admin" value="admin" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Security Password</label>
+            <input type="password" id="password" class="input-field mono" placeholder="••••••••" value="admin123" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-launch" id="launchBtn">
+          <span>Authenticate & Launch Platform</span>
+          <span>→</span>
+        </button>
+
+        <div class="demo-creds">
+          <span>Quick Demo Logins:</span>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="cred-btn" onclick="fillCreds('admin', 'admin123')">admin (both)</button>
+            <button type="button" class="cred-btn" onclick="fillCreds('analyst1', 'analyst123')">analyst1 (p1 only)</button>
+            <button type="button" class="cred-btn" onclick="fillCreds('analyst2', 'analyst234')">analyst2 (p2 only)</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Logged-in Panel -->
+      <div class="logged-in-panel" id="loggedInPanel">
+        <div class="user-avatar-badge">
+          <span>👤</span>
+          <span>Authenticated as <b id="loggedInName">Administrator</b></span>
+        </div>
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 16px;">Select any authorized project above to open its workspace.</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button class="btn-launch" style="width: auto; padding: 10px 24px;" onclick="launchSelected()">Launch Selected Project →</button>
+          <button class="cred-btn" style="padding: 10px 18px;" onclick="handleLogout()">Log Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedProject = 'project1';
+    let currentUser = null;
+
+    function selectProject(proj) {
+      if (currentUser && !currentUser.allowed_projects.includes(proj)) {
+        showError(`Your user account (${currentUser.username}) does not have permission to access ${proj}.`);
+        return;
+      }
+      hideError();
+      selectedProject = proj;
+      document.getElementById('cardP1').classList.toggle('selected', proj === 'project1');
+      document.getElementById('cardP2').classList.toggle('selected', proj === 'project2');
+    }
+
+    function fillCreds(u, p) {
+      document.getElementById('username').value = u;
+      document.getElementById('password').value = p;
+      if (u === 'analyst1') selectProject('project1');
+      if (u === 'analyst2') selectProject('project2');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorBanner');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideError() {
+      document.getElementById('errorBanner').style.display = 'none';
+    }
+
+    async function checkSession() {
+      try {
+        const res = await fetch('/auth/me');
+        if (res.ok) {
+          const user = await res.json();
+          currentUser = user;
+          document.getElementById('loginForm').style.display = 'none';
+          document.getElementById('loggedInPanel').style.display = 'block';
+          document.getElementById('loggedInName').textContent = `${user.name} (${user.username})`;
+
+          // Update card disabled states based on permissions
+          const p1Allowed = user.allowed_projects.includes('project1');
+          const p2Allowed = user.allowed_projects.includes('project2');
+
+          document.getElementById('cardP1').classList.toggle('disabled', !p1Allowed);
+          document.getElementById('cardP2').classList.toggle('disabled', !p2Allowed);
+
+          if (!p1Allowed && p2Allowed) selectProject('project2');
+          else if (p1Allowed) selectProject('project1');
+        }
+      } catch(e) {}
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideError();
+      const btn = document.getElementById('launchBtn');
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, project: selectedProject })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Authentication failed');
+        }
+
+        // Redirect to selected project
+        window.location.href = selectedProject === 'project1' ? '/p1/' : '/p2/';
+      } catch(err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<span>Authenticate & Launch Platform</span><span>→</span>';
+      }
+    }
+
+    function launchSelected() {
+      window.location.href = selectedProject === 'project1' ? '/p1/' : '/p2/';
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/auth/logout', { method: 'POST' });
+      } catch(e) {}
+      window.location.reload();
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('dotGw').className = 'dot';
+          document.getElementById('dotP1').className = `dot ${data.project1?.status === 'ok' ? '' : 'down'}`;
+          document.getElementById('dotP2').className = `dot ${data.project2?.status === 'ok' ? '' : 'down'}`;
+        }
+      } catch(e) {
+        document.getElementById('dotGw').className = 'dot down';
+      }
+    }
+
+    // Init
+    checkSession();
+    checkHealth();
+    setInterval(checkHealth, 5000);
+  </script>
+</body>
+</html>
