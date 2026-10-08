@@ -9,7 +9,8 @@
   const currentPath = window.location.pathname;
   const isP1 = currentPath.startsWith('/p1');
   const isP2 = currentPath.startsWith('/p2');
-  const projName = isP1 ? 'Project 1 (6-Agent Core)' : (isP2 ? 'Project 2 (Money Map)' : 'Portal');
+  const isP3 = currentPath.startsWith('/p3');
+  const projName = isP1 ? 'Project 1 (6-Agent Core)' : (isP2 ? 'Project 2 (Money Map)' : (isP3 ? 'Project 3 (Model Analytics)' : 'Portal'));
 
   const css = `
     .ag-suite-bar {

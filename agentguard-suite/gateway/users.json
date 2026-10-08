@@ -5,7 +5,8 @@
     "password_hash": "pbkdf2_sha256$100000$7156e7988d83666692460ecfea3d07a7$2f2a1cf47a4b95fa2b9d8b20917a384bdb7f73bc08eeb03c65be859457a0f3ab",
     "allowed_projects": [
       "project1",
-      "project2"
+      "project2",
+      "project3"
     ]
   },
   "analyst1": {
@@ -22,6 +23,14 @@
     "password_hash": "pbkdf2_sha256$100000$f7e44257f568973c5c465e739c541561$f7000e8e5a88a1befb83901b08631fd4ee86024b107395ae9696b8c8d472895e",
     "allowed_projects": [
       "project2"
+    ]
+  },
+  "analyst3": {
+    "username": "analyst3",
+    "name": "Model Analytics Lead",
+    "password_hash": "pbkdf2_sha256$100000$3887da21dc3b311ad637bdec15580ec5$e896333748a044fe43cf656aad0543759748f0f6426dd1ba9baa56574c54b1e0",
+    "allowed_projects": [
+      "project3"
     ]
   }
 }

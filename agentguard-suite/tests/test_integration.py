@@ -28,6 +28,7 @@ def test_health_endpoint(client):
     assert data["gateway"] == "ok"
     assert "project1" in data
     assert "project2" in data
+    assert "project3" in data
 
 
 def test_portal_page_serving(client):
@@ -56,7 +57,7 @@ def test_login_success_admin(client):
     assert data["status"] == "ok"
     assert "token" in data
     assert data["user"]["username"] == "admin"
-    assert set(data["user"]["allowed_projects"]) == {"project1", "project2"}
+    assert set(data["user"]["allowed_projects"]) == {"project1", "project2", "project3"}
     assert "ag_suite_token" in response.cookies
 
 
@@ -101,14 +102,17 @@ def test_auth_me_authenticated_vs_unauthenticated(client):
 
 
 def test_role_based_access_control(client):
-    """Verify RBAC: analyst1 (p1 only), analyst2 (p2 only), admin (both)."""
+    """Verify RBAC: analyst1 (p1), analyst2 (p2), analyst3 (p3), admin (all)."""
     # 1. Login analyst1
     t_a1 = client.post("/auth/login", json={"username": "analyst1", "password": "analyst123"}).json()["token"]
 
     # 2. Login analyst2
     t_a2 = client.post("/auth/login", json={"username": "analyst2", "password": "analyst234"}).json()["token"]
 
-    # 3. Login admin
+    # 3. Login analyst3
+    t_a3 = client.post("/auth/login", json={"username": "analyst3", "password": "analyst345"}).json()["token"]
+
+    # 4. Login admin
     t_admin = client.post("/auth/login", json={"username": "admin", "password": "admin123"}).json()["token"]
 
     # Analyst1 access to P2 API must return 403 Forbidden
@@ -121,14 +125,20 @@ def test_role_based_access_control(client):
     p1_forbidden = c2.get("/p1/api/health", headers={"Authorization": f"Bearer {t_a2}"})
     assert p1_forbidden.status_code == 403
 
-    # Unauthenticated access to /p1/api or /p2/api must return 401
+    # Analyst3 access to P1 API must return 403 Forbidden
     c3 = TestClient(app)
-    assert c3.get("/p1/api/health").status_code == 401
-    assert c3.get("/p2/api/health").status_code == 401
+    p1_f3 = c3.get("/p1/api/health", headers={"Authorization": f"Bearer {t_a3}"})
+    assert p1_f3.status_code == 403
+
+    # Unauthenticated access to /p1/api, /p2/api, /p3/api must return 401
+    c4 = TestClient(app)
+    assert c4.get("/p1/api/health").status_code == 401
+    assert c4.get("/p2/api/health").status_code == 401
+    assert c4.get("/p3/api/health").status_code == 401
 
 
 def test_project_spa_pages_access(client):
-    """Verify /p1/ and /p2/ SPA serving with authentication and widget injection."""
+    """Verify /p1/, /p2/, and /p3/ SPA serving with authentication and widget injection."""
     # Login admin
     res = client.post("/auth/login", json={"username": "admin", "password": "admin123"})
     token = res.json()["token"]
@@ -142,6 +152,12 @@ def test_project_spa_pages_access(client):
     p2_page = client.get("/p2/", headers={"Authorization": f"Bearer {token}"})
     assert p2_page.status_code == 200
     assert "switch-widget.js" in p2_page.text
+
+    # P3 SPA page
+    p3_page = client.get("/p3/", headers={"Authorization": f"Bearer {token}"})
+    assert p3_page.status_code == 200
+    assert "switch-widget.js" in p3_page.text
+    assert "PROJECT 3" in p3_page.text
 
 
 def test_logout(client):

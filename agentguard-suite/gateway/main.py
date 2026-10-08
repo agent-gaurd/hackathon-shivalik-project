@@ -34,10 +34,12 @@ app.add_middleware(
 # Upstream Backend URLs
 PROJECT1_BACKEND = os.getenv("P1_URL", "http://127.0.0.1:8001")
 PROJECT2_BACKEND = os.getenv("P2_URL", "http://127.0.0.1:8002")
+PROJECT3_BACKEND = os.getenv("P3_URL", "http://127.0.0.1:8003")
 
 PORTAL_DIR = SUITE_ROOT / "portal"
 P1_STATIC_DIR = SUITE_ROOT / "projects" / "project1" / "static"
 P2_STATIC_DIR = SUITE_ROOT / "projects" / "project2" / "backend" / "static"
+P3_STATIC_DIR = SUITE_ROOT / "projects" / "project3" / "static"
 
 
 # ------------------------------------------------------------------ Authentication
@@ -145,14 +147,24 @@ async def suite_health():
         except Exception as e:
             p2_res = {"status": "down", "error": str(e)}
 
+        # Check Project 3
+        p3_res = None
+        try:
+            r3 = await client.get(f"{PROJECT3_BACKEND}/health")
+            p3_res = r3.json() if r3.status_code == 200 else {"status": "error", "code": r3.status_code}
+        except Exception as e:
+            p3_res = {"status": "down", "error": str(e)}
+
     p1_ok = isinstance(p1_res, dict) and p1_res.get("status") == "ok"
     p2_ok = isinstance(p2_res, dict) and p2_res.get("status") == "ok"
+    p3_ok = isinstance(p3_res, dict) and p3_res.get("status") == "ok"
 
     return {
-        "status": "ok" if (p1_ok and p2_ok) else "degraded",
+        "status": "ok" if (p1_ok and p2_ok and p3_ok) else ("degraded" if (p1_ok or p2_ok or p3_ok) else "down"),
         "gateway": "ok",
         "project1": p1_res,
-        "project2": p2_res
+        "project2": p2_res,
+        "project3": p3_res
     }
 
 
@@ -206,6 +218,11 @@ async def p1_api_proxy(request: Request, path: str):
 @app.api_route("/p2/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
 async def p2_api_proxy(request: Request, path: str):
     return await proxy_request(request, PROJECT2_BACKEND, "project2", path)
+
+
+@app.api_route("/p3/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+async def p3_api_proxy(request: Request, path: str):
+    return await proxy_request(request, PROJECT3_BACKEND, "project3", path)
 
 
 # ------------------------------------------------------------------ WebSocket Reverse Proxy
@@ -325,6 +342,32 @@ async def serve_p2_spa(request: Request, path: str = ""):
     file_path = P2_STATIC_DIR / path if path else P2_STATIC_DIR / "index.html"
     if not file_path.exists() or file_path.is_dir():
         file_path = P2_STATIC_DIR / "index.html"
+
+    if file_path.suffix == ".html":
+        content = file_path.read_text(encoding="utf-8")
+        return HTMLResponse(inject_widget(content))
+    return FileResponse(str(file_path))
+
+
+@app.get("/p3/{path:path}")
+@app.get("/p3")
+async def serve_p3_spa(request: Request, path: str = ""):
+    token = get_token_from_request(request)
+    if not token or not decode_token(token):
+        return HTMLResponse(
+            "<script>alert('Please log in through the unified portal first.'); window.location.href='/';</script>",
+            status_code=401
+        )
+    user = decode_token(token)
+    if "project3" not in user.get("allowed_projects", []):
+        return HTMLResponse(
+            f"<script>alert('Account {user.get('sub')} does not have permission to access Project 3.'); window.location.href='/';</script>",
+            status_code=403
+        )
+
+    file_path = P3_STATIC_DIR / path if path else P3_STATIC_DIR / "index.html"
+    if not file_path.exists() or file_path.is_dir():
+        file_path = P3_STATIC_DIR / "index.html"
 
     if file_path.suffix == ".html":
         content = file_path.read_text(encoding="utf-8")

@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentGuard | Project 3 — Model Analytics & Decision Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #070a14;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --card-border: rgba(56, 189, 248, 0.16);
+      --card-hover-border: rgba(56, 189, 248, 0.38);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.3);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.3);
+      --green-bg: rgba(16, 185, 129, 0.12);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.3);
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.3);
+      --red-bg: rgba(239, 68, 68, 0.12);
+      --purple: #a855f7;
+      --purple-glow: rgba(168, 85, 247, 0.3);
+      --purple-bg: rgba(168, 85, 247, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 10% 5%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 50% 95%, rgba(239, 68, 68, 0.06) 0%, transparent 45%),
+        radial-gradient(circle at 20% 60%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Top Navigation */
+    header {
+      background: rgba(11, 17, 32, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      font-size: 20px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      padding: 7px 11px;
+      border-radius: 12px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .brand-text h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; display: flex; align-items: center; gap: 8px; }
+    .brand-text p { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    .badge-p3 {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 2px 8px;
+      border-radius: 14px;
+      letter-spacing: 0.5px;
+    }
+    .header-controls { display: flex; align-items: center; gap: 10px; }
+    
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn:hover {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      border: 1px solid #38bdf8;
+      color: #030712;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #0284c7);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .select-dropdown {
+      background: #0d1526;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+    .select-dropdown:focus { border-color: var(--accent); }
+
+    /* Main Container */
+    main {
+      padding: 24px 28px;
+      max-width: 1720px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      flex: 1;
+    }
+
+    /* Hero KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(14px);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kpi-card:hover {
+      border-color: var(--card-hover-border);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .kpi-card.total::before { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+    .kpi-card.allowed::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .kpi-card.stepped::before { background: linear-gradient(90deg, #f59e0b, #38bdf8); }
+    .kpi-card.blocked::before { background: linear-gradient(90deg, #ef4444, #f43f5e); }
+
+    .kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .kpi-title { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .kpi-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-allowed { background: var(--green-bg); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-stepped { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-blocked { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-total { background: rgba(56, 189, 248, 0.12); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
+
+    .kpi-main-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .kpi-count { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .kpi-pct { font-size: 15px; font-weight: 700; }
+    .kpi-pct.green { color: var(--green); }
+    .kpi-pct.amber { color: var(--amber); }
+    .kpi-pct.red { color: var(--red); }
+    .kpi-pct.accent { color: var(--accent); }
+
+    .kpi-sub-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding-top: 10px;
+      margin-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .kpi-sub-stats b { color: var(--text); font-weight: 600; }
+
+    /* Comparative Ribbon Bar */
+    .ratio-ribbon-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ribbon-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .ribbon-bar {
+      height: 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+    .ribbon-segment {
+      height: 100%;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .ribbon-allowed { background: linear-gradient(90deg, #10b981, #059669); }
+    .ribbon-stepped { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .ribbon-blocked { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    
+    .ribbon-legend {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* Comparison Table Matrix */
+    .comp-matrix-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(14px);
+    }
+    .card-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title-bar h2 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-subtitle { font-size: 12.5px; color: var(--muted); }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .matrix-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .matrix-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+    .matrix-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .matrix-highlight { font-weight: 700; }
+
+    /* 2-Column Analytics Grids */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1024px) { .analytics-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 290px;
+      margin-top: 12px;
+    }
+
+    /* Behavioral Signals Heatmap Grid */
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 900px) { .signals-grid { grid-template-columns: 1fr; } }
+
+    .signal-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .signal-name { font-size: 12.5px; font-weight: 600; color: #fff; }
+    .signal-bars { display: flex; flex-direction: column; gap: 5px; }
+    .signal-bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+    .bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      margin: 0 8px;
+      overflow: hidden;
+    }
+    .bar-fill-allowed { height: 100%; background: var(--green); border-radius: 3px; }
+    .bar-fill-stepped { height: 100%; background: var(--amber); border-radius: 3px; }
+    .bar-fill-blocked { height: 100%; background: var(--red); border-radius: 3px; }
+
+    /* Transaction Ledger & Filter Controls */
+    .ledger-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(14px);
+    }
+    .filter-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-pill:hover { border-color: var(--accent); color: var(--text); }
+    .filter-pill.active {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+    .filter-pill.active.pill-allowed {
+      background: var(--green-bg);
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .filter-pill.active.pill-stepped {
+      background: var(--amber-bg);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+    .filter-pill.active.pill-blocked {
+      background: var(--red-bg);
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 260px;
+    }
+    .search-box input {
+      width: 100%;
+      background: rgba(13, 21, 38, 0.9);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12.5px;
+      padding: 7px 12px 7px 32px;
+      border-radius: 9px;
+      outline: none;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .txn-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      text-align: left;
+    }
+    .txn-table th {
+      background: rgba(13, 21, 38, 0.9);
+      padding: 10px 14px;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+    .txn-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      white-space: nowrap;
+    }
+    .txn-table tr:hover td {
+      background: rgba(56, 189, 248, 0.03);
+    }
+    .score-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .score-low { background: var(--green-bg); color: var(--green); }
+    .score-mid { background: var(--amber-bg); color: var(--amber); }
+    .score-high { background: var(--red-bg); color: var(--red); }
+
+    .agent-spark {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .spark-bar {
+      width: 5px;
+      height: 14px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Modal / Drawer */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-panel {
+      background: #0f172a;
+      border: 1px solid var(--accent);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 30px var(--accent-glow);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 14px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: #fff; }
+    
+    .telemetry-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .telemetry-block {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .telemetry-block h4 { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; }
+
+    /* Simulation Dropdown Menu */
+    .sim-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: none;
+      flex-direction: column;
+      min-width: 220px;
+      overflow: hidden;
+      z-index: 200;
+    }
+    .sim-menu.open { display: flex; }
+    .sim-menu-item {
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: var(--text);
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: 0.15s;
+    }
+    .sim-menu-item:hover { background: rgba(56, 189, 248, 0.12); color: var(--accent); }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">📈</div>
+      <div class="brand-text">
+        <h1>
+          <span>AGENTGUARD</span>
+          <span class="badge-p3">PROJECT 3</span>
+        </h1>
+        <p>Model Analytics & Decision Intelligence Dashboard</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span id="engineStatusText">Multi-Model Pipeline Online</span>
+      </div>
+
+      <!-- Engine Filter Selector -->
+      <select class="select-dropdown" id="engineFilterSelect" onchange="applyEngineFilter()">
+        <option value="ALL">All Models & Engines</option>
+        <option value="Project 1 (6-Agent Core)">Project 1 Core (6-Agent)</option>
+        <option value="Project 2 (Policy Orchestrator)">Project 2 Policy Console</option>
+        <option value="Real-Time Scenario Simulator">Simulator Benchmark</option>
+      </select>
+
+      <!-- Sync Button -->
+      <button class="btn btn-primary" id="syncBtn" onclick="triggerSync()">
+        <span>⚡</span>
+        <span id="syncBtnText">Sync P1 & P2 Data</span>
+      </button>
+
+      <!-- Simulation Dropdown Trigger -->
+      <div style="position: relative;">
+        <button class="btn" id="simMenuBtn" onclick="toggleSimMenu(event)">
+          <span>▶</span>
+          <span>Simulate Wave ▾</span>
+        </button>
+        <div class="sim-menu" id="simMenu">
+          <button class="sim-menu-item" onclick="triggerSimulate('normal', 10)">
+            <span>🟢</span> <span>Normal Payments (10 txns)</span>
+          </button>
+          <button class="sim-menu-item" onclick="triggerSimulate('digital_arrest', 5)">
+            <span>🚨</span> <span>Digital Arrest Wave (5 txns)</span>
+          </button>
+          <button class="sim-menu-item" onclick="triggerSimulate('ato', 5)">
+            <span>📱</span> <span>Account Takeover / SIM Swap</span>
+          </button>
+          <button class="sim-menu-item" onclick="triggerSimulate('mule_fanin', 5)">
+            <span>🕸️</span> <span>Mule Ring Fan-In Attack</span>
+          </button>
+          <button class="sim-menu-item" onclick="triggerSimulate('structuring', 5)">
+            <span>💸</span> <span>Structuring / Smurfing Evasion</span>
+          </button>
+          <button class="sim-menu-item" onclick="triggerSimulate('screen_share', 5)">
+            <span>🖥️</span> <span>Remote Screen-Share Scam</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Auto Refresh Switch -->
+      <button class="btn" id="refreshBtn" onclick="refreshAllData()">
+        <span>⟳</span>
+        <span>Refresh</span>
+      </button>
+
+      <button class="btn" onclick="exportDataCSV()">
+        <span>📥</span>
+        <span>Export CSV</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Content -->
+  <main>
+
+    <!-- Row 1: Executive KPI Summary Cards -->
+    <section class="kpi-grid">
+      <!-- Total Evaluated -->
+      <div class="kpi-card total" id="kpiTotalCard">
+        <div class="kpi-header">
+          <span class="kpi-title">TOTAL DATA EVALUATED</span>
+          <span class="kpi-badge badge-total">All Models</span>
+        </div>
+        <div class="kpi-main-stat">
+          <span class="kpi-count mono" id="totalCountVal">0</span>
+          <span class="kpi-pct accent" id="totalVolumeVal">₹0.00</span>
+        </div>
+        <div class="kpi-sub-stats">
+          <div>Avg Latency: <b class="mono" id="meanLatencyVal">0 ms</b></div>
+          <div>95th Percentile: <b class="mono" id="p95LatencyVal">0 ms</b></div>
+        </div>
+      </div>
+
+      <!-- Allowed -->
+      <div class="kpi-card allowed" id="kpiAllowedCard">
+        <div class="kpi-header">
+          <span class="kpi-title">ALLOWED (BASELINE)</span>
+          <span class="kpi-badge badge-allowed">Frictionless</span>
+        </div>
+        <div class="kpi-main-stat">
+          <span class="kpi-count mono" id="allowedCountVal">0</span>
+          <span class="kpi-pct green mono" id="allowedPctVal">0%</span>
+        </div>
+        <div class="kpi-sub-stats">
+          <div>Volume: <b class="mono" id="allowedVolVal">₹0</b></div>
+          <div>Avg Risk Score: <b class="mono" id="allowedScoreVal">0.0</b></div>
+        </div>
+      </div>
+
+      <!-- Stepped-Up -->
+      <div class="kpi-card stepped" id="kpiSteppedCard">
+        <div class="kpi-header">
+          <span class="kpi-title">STEPPED-UP (CHALLENGED)</span>
+          <span class="kpi-badge badge-stepped">Auth & Review</span>
+        </div>
+        <div class="kpi-main-stat">
+          <span class="kpi-count mono" id="steppedCountVal">0</span>
+          <span class="kpi-pct amber mono" id="steppedPctVal">0%</span>
+        </div>
+        <div class="kpi-sub-stats">
+          <div>Volume: <b class="mono" id="steppedVolVal">₹0</b></div>
+          <div>Avg Risk Score: <b class="mono" id="steppedScoreVal">0.0</b></div>
+        </div>
+      </div>
+
+      <!-- Blocked -->
+      <div class="kpi-card blocked" id="kpiBlockedCard">
+        <div class="kpi-header">
+          <span class="kpi-title">BLOCKED (INTERCEPTED)</span>
+          <span class="kpi-badge badge-blocked">Threat Block</span>
+        </div>
+        <div class="kpi-main-stat">
+          <span class="kpi-count mono" id="blockedCountVal">0</span>
+          <span class="kpi-pct red mono" id="blockedPctVal">0%</span>
+        </div>
+        <div class="kpi-sub-stats">
+          <div>Saved: <b class="mono" id="blockedVolVal">₹0</b></div>
+          <div>Avg Risk Score: <b class="mono" id="blockedScoreVal">0.0</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparative Ribbon Distribution Bar -->
+    <section class="ratio-ribbon-card">
+      <div class="ribbon-header">
+        <span>Decision Volume Ratio: Allowed vs Stepped-Up vs Blocked</span>
+        <span class="mono" style="color: var(--accent);" id="protectionRatioVal">Protection Efficiency: 0%</span>
+      </div>
+      <div class="ribbon-bar">
+        <div class="ribbon-segment ribbon-allowed" id="ribbonAllowed" style="width: 70%;" title="Allowed"></div>
+        <div class="ribbon-segment ribbon-stepped" id="ribbonStepped" style="width: 20%;" title="Stepped Up"></div>
+        <div class="ribbon-segment ribbon-blocked" id="ribbonBlocked" style="width: 10%;" title="Blocked"></div>
+      </div>
+      <div class="ribbon-legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--green);"></span>
+          <span>Allowed Baseline: <b id="legAllowedText">0 (0%)</b></span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--amber);"></span>
+          <span>Stepped-Up Challenge: <b id="legSteppedText">0 (0%)</b></span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--red);"></span>
+          <span>Blocked Interceptions: <b id="legBlockedText">0 (0%)</b></span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background: var(--purple);"></span>
+          <span>Friction vs Protection Delta: <b id="legDeltaText">+0.0 Score Divergence</b></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 2: Direct Head-to-Head Comparative Matrix -->
+    <section class="comp-matrix-card">
+      <div class="card-title-bar">
+        <div>
+          <h2>⚡ Head-to-Head Decision Matrix (Models Evaluation Comparison)</h2>
+          <div class="card-subtitle">Comprehensive comparison of data seen by the models: Stepped-Up and Blocked compared directly against Allowed baselines.</div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="matrix-table" id="matrixTable">
+          <thead>
+            <tr>
+              <th>Analytical Dimension</th>
+              <th style="color: var(--green);">Allowed Baseline</th>
+              <th style="color: var(--amber);">Stepped-Up (Challenged)</th>
+              <th style="color: var(--red);">Blocked (Hard Defense)</th>
+              <th style="color: var(--accent);">Contrast / Delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Transaction Share</b></td>
+              <td class="mono" id="mRowAllowedShare">0%</td>
+              <td class="mono" id="mRowSteppedShare">0%</td>
+              <td class="mono" id="mRowBlockedShare">0%</td>
+              <td class="mono" id="mRowShareDelta">Friction: 0% | Block: 0%</td>
+            </tr>
+            <tr>
+              <td><b>Financial Volume (₹ INR)</b></td>
+              <td class="mono" id="mRowAllowedVol">₹0</td>
+              <td class="mono" id="mRowSteppedVol">₹0</td>
+              <td class="mono" id="mRowBlockedVol">₹0</td>
+              <td class="mono" id="mRowVolRatio">₹0 Saved</td>
+            </tr>
+            <tr>
+              <td><b>Average Ticket Size (₹)</b></td>
+              <td class="mono" id="mRowAllowedTicket">₹0</td>
+              <td class="mono" id="mRowSteppedTicket">₹0</td>
+              <td class="mono" id="mRowBlockedTicket">₹0</td>
+              <td class="mono" id="mRowTicketDelta">0x larger for Blocked</td>
+            </tr>
+            <tr>
+              <td><b>Overall Risk Score (0-100)</b></td>
+              <td class="mono score-low" id="mRowAllowedScore">0.0</td>
+              <td class="mono score-mid" id="mRowSteppedScore">0.0</td>
+              <td class="mono score-high" id="mRowBlockedScore">0.0</td>
+              <td class="mono" id="mRowScoreDelta">+0.0 score escalation</td>
+            </tr>
+            <tr>
+              <td><b>XGBoost Transaction Model Avg</b></td>
+              <td class="mono" id="mRowAllowedTxn">0.0</td>
+              <td class="mono" id="mRowSteppedTxn">0.0</td>
+              <td class="mono" id="mRowBlockedTxn">0.0</td>
+              <td class="mono" id="mRowTxnDelta">+0.0 divergence</td>
+            </tr>
+            <tr>
+              <td><b>Isolation Forest Behavior Model Avg</b></td>
+              <td class="mono" id="mRowAllowedBeh">0.0</td>
+              <td class="mono" id="mRowSteppedBeh">0.0</td>
+              <td class="mono" id="mRowBlockedBeh">0.0</td>
+              <td class="mono" id="mRowBehDelta">+0.0 divergence</td>
+            </tr>
+            <tr>
+              <td><b>Graph Mule Agent Avg</b></td>
+              <td class="mono" id="mRowAllowedMule">0.0</td>
+              <td class="mono" id="mRowSteppedMule">0.0</td>
+              <td class="mono" id="mRowBlockedMule">0.0</td>
+              <td class="mono" id="mRowMuleDelta">+0.0 divergence</td>
+            </tr>
+            <tr>
+              <td><b>AML Structuring Model Avg</b></td>
+              <td class="mono" id="mRowAllowedAml">0.0</td>
+              <td class="mono" id="mRowSteppedAml">0.0</td>
+              <td class="mono" id="mRowBlockedAml">0.0</td>
+              <td class="mono" id="mRowAmlDelta">+0.0 divergence</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Row 3: Charts Grid 1 (Score Histogram Density + Per-Model Breakdown) -->
+    <section class="analytics-grid">
+      <!-- Score Distribution Curve -->
+      <div class="chart-card">
+        <div class="card-title-bar">
+          <div>
+            <h2>🎯 Model Risk Score Density & Threshold Boundaries</h2>
+            <div class="card-subtitle">Distribution of model risk scores (0-100) across Allowed vs Stepped-Up vs Blocked.</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="scoreDistChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Per-Model Agent Bar Comparison -->
+      <div class="chart-card">
+        <div class="card-title-bar">
+          <div>
+            <h2>🤖 Per-Model / Per-Agent Score Comparison</h2>
+            <div class="card-subtitle">How each specialized AI agent scores Allowed vs Stepped-Up vs Blocked transactions.</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="modelCompChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 4: Charts Grid 2 (Typology Matrix + Decision Throughput Timeline) -->
+    <section class="analytics-grid">
+      <!-- Typology Stacked Breakdown -->
+      <div class="chart-card">
+        <div class="card-title-bar">
+          <div>
+            <h2>🛡️ Fraud Typology Matrix Breakdown</h2>
+            <div class="card-subtitle">Evaluation outcome breakdown across each attack vector and scenario.</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="typologyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Temporal Timeline -->
+      <div class="chart-card">
+        <div class="card-title-bar">
+          <div>
+            <h2>⏱️ Real-Time Decision Stream Throughput</h2>
+            <div class="card-subtitle">Chronological throughput of Allowed, Stepped-Up, and Blocked decisions.</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 5: Behavioral Threat Signals Heatmap -->
+    <section class="comp-matrix-card">
+      <div class="card-title-bar">
+        <div>
+          <h2>🚩 Threat Signals Prevalence Comparison</h2>
+          <div class="card-subtitle">Frequency of behavioral and contextual flags detected across Allowed vs Stepped-Up vs Blocked payments.</div>
+        </div>
+      </div>
+      <div class="signals-grid" id="signalsGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- Row 6: Interactive Transaction Ledger & Deep Telemetry -->
+    <section class="ledger-card">
+      <div class="card-title-bar">
+        <div>
+          <h2>📋 Evaluated Payment Ledger & Model Telemetry</h2>
+          <div class="card-subtitle">Search, filter, and inspect granular agent reasoning for every evaluated transaction.</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <button class="filter-pill active" id="pillAll" onclick="setCategoryFilter('ALL')">All Records</button>
+          <button class="filter-pill pill-allowed" id="pillAllowed" onclick="setCategoryFilter('ALLOWED')">Allowed Only</button>
+          <button class="filter-pill pill-stepped" id="pillStepped" onclick="setCategoryFilter('STEPPED_UP')">Stepped-Up Only</button>
+          <button class="filter-pill pill-blocked" id="pillBlocked" onclick="setCategoryFilter('BLOCKED')">Blocked Only</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search Txn ID, Payer, Payee, Flag..." oninput="handleSearch()">
+          </div>
+
+          <select class="select-dropdown" id="typologyFilterSelect" onchange="applyFilters()">
+            <option value="ALL">All Typologies</option>
+            <option value="T0">Normal Payments</option>
+            <option value="T1">Digital Arrest Impersonation</option>
+            <option value="T3">Account Takeover (SIM Swap)</option>
+            <option value="T4">Remote Screen-Share</option>
+            <option value="T7">Micro-Payment Probing</option>
+            <option value="T8">Mule Fan-in Collector</option>
+            <option value="T11">Structuring (Smurfing)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="txn-table" id="txnTable">
+          <thead>
+            <tr>
+              <th>Txn ID</th>
+              <th>Time</th>
+              <th>Payer → Payee</th>
+              <th>Amount (₹)</th>
+              <th>Typology Vector</th>
+              <th>Agent Scores (Txn / Beh / Vel / Mule / AML)</th>
+              <th>Overall Score</th>
+              <th>Decision</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="txnTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">Loading evaluated payment telemetry...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Deep Model Telemetry Modal -->
+  <div class="modal-backdrop" id="telemetryModal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-panel" id="modalPanel">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <span id="modalTxnId" class="mono">TXN-0000</span>
+            <span id="modalDecisionBadge" class="kpi-badge badge-allowed">ALLOWED</span>
+          </h3>
+          <p id="modalTime" style="font-size: 12px; color: var(--muted); margin-top: 3px;">Timestamp</p>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="telemetry-row">
+        <div class="telemetry-block">
+          <h4>Payment Metadata</h4>
+          <p style="font-size: 13px; margin-bottom: 4px;">Payer: <b id="modalPayer" class="mono">-</b></p>
+          <p style="font-size: 13px; margin-bottom: 4px;">Payee: <b id="modalPayee" class="mono">-</b></p>
+          <p style="font-size: 13px; margin-bottom: 4px;">Amount: <b id="modalAmount" class="mono" style="color: var(--accent);">-</b></p>
+          <p style="font-size: 13px; margin-bottom: 4px;">Channel: <b id="modalChannel">-</b></p>
+          <p style="font-size: 13px;">Engine: <b id="modalEngine">-</b></p>
+        </div>
+        <div class="telemetry-block">
+          <h4>Model Scoring Summary</h4>
+          <p style="font-size: 13px; margin-bottom: 4px;">Overall Risk Score: <b id="modalScore" class="mono">-</b> / 100</p>
+          <p style="font-size: 13px; margin-bottom: 4px;">Inference Latency: <b id="modalLatency" class="mono">- ms</b></p>
+          <p style="font-size: 13px; margin-bottom: 4px;">Typology: <b id="modalTypology">-</b></p>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 6px;" id="modalReason">Reasoning</p>
+        </div>
+      </div>
+
+      <!-- Agent Breakdown Bars in Modal -->
+      <div class="telemetry-block">
+        <h4>Specialized AI Agent Scores</h4>
+        <div id="modalAgentBars" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Signals Detected -->
+      <div class="telemetry-block">
+        <h4>Triggered Behavioral Flags</h4>
+        <div id="modalSignalsList" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">ℹ️</span>
+    <span id="toastMsg">Action complete</span>
+  </div>
+
+  <script>
+    // Global State
+    let currentCategoryFilter = 'ALL';
+    let currentEngineFilter = 'ALL';
+    let currentTypologyFilter = 'ALL';
+    let currentSearchQuery = '';
+    let autoRefreshTimer = null;
+
+    // Chart instances
+    let scoreDistChartInstance = null;
+    let modelCompChartInstance = null;
+    let typologyChartInstance = null;
+    let timelineChartInstance = null;
+
+    // Dynamic API Base Resolution
+    const API_BASE = window.API_BASE_URL || (location.pathname.startsWith('/p3') ? '/p3/api' : '');
+
+    // Format helpers
+    function formatINR(val) {
+      if (val === undefined || val === null) return '₹0';
+      if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;
+      if (val >= 100000) return `₹${(val / 100000).toFixed(2)} L`;
+      return `₹${Number(val).toLocaleString('en-IN')}`;
+    }
+
+    function showToast(msg, icon = '✅') {
+      const el = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMsg').textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    // Initialize Chart.js Dark Mode Defaults
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
+    Chart.defaults.font.family = "'Inter', sans-serif";
+
+    // Data Loaders
+    async function loadStats() {
+      try {
+        const url = `${API_BASE}/stats?engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Populate KPIs
+        document.getElementById('totalCountVal').textContent = (data.total_count || 0).toLocaleString();
+        document.getElementById('totalVolumeVal').textContent = formatINR(data.total_volume_inr);
+        document.getElementById('meanLatencyVal').textContent = `${data.latency?.mean_ms || 0} ms`;
+        document.getElementById('p95LatencyVal').textContent = `${data.latency?.p95_ms || 0} ms`;
+
+        const a = data.allowed || {};
+        const s = data.stepped_up || {};
+        const b = data.blocked || {};
+
+        document.getElementById('allowedCountVal').textContent = (a.count || 0).toLocaleString();
+        document.getElementById('allowedPctVal').textContent = `${a.pct || 0}%`;
+        document.getElementById('allowedVolVal').textContent = formatINR(a.volume_inr);
+        document.getElementById('allowedScoreVal').textContent = a.avg_score || 0;
+
+        document.getElementById('steppedCountVal').textContent = (s.count || 0).toLocaleString();
+        document.getElementById('steppedPctVal').textContent = `${s.pct || 0}%`;
+        document.getElementById('steppedVolVal').textContent = formatINR(s.volume_inr);
+        document.getElementById('steppedScoreVal').textContent = s.avg_score || 0;
+
+        document.getElementById('blockedCountVal').textContent = (b.count || 0).toLocaleString();
+        document.getElementById('blockedPctVal').textContent = `${b.pct || 0}%`;
+        document.getElementById('blockedVolVal').textContent = formatINR(b.volume_inr);
+        document.getElementById('blockedScoreVal').textContent = b.avg_score || 0;
+
+        // Ribbon Bar
+        document.getElementById('ribbonAllowed').style.width = `${a.pct || 0}%`;
+        document.getElementById('ribbonStepped').style.width = `${s.pct || 0}%`;
+        document.getElementById('ribbonBlocked').style.width = `${b.pct || 0}%`;
+
+        document.getElementById('legAllowedText').textContent = `${a.count || 0} (${a.pct || 0}%)`;
+        document.getElementById('legSteppedText').textContent = `${s.count || 0} (${s.pct || 0}%)`;
+        document.getElementById('legBlockedText').textContent = `${b.count || 0} (${b.pct || 0}%)`;
+
+        const cmp = data.comparison || {};
+        document.getElementById('protectionRatioVal').textContent = `Intervention Rate: ${cmp.risk_intervention_pct || 0}% · Money Protected: ${cmp.protected_money_ratio_pct || 0}%`;
+        document.getElementById('legDeltaText').textContent = `+${cmp.score_delta_blocked_vs_allowed || 0} Score Escalation`;
+
+        // Matrix Row Updates
+        document.getElementById('mRowAllowedShare').textContent = `${a.pct || 0}% (${a.count} txns)`;
+        document.getElementById('mRowSteppedShare').textContent = `${s.pct || 0}% (${s.count} txns)`;
+        document.getElementById('mRowBlockedShare').textContent = `${b.pct || 0}% (${b.count} txns)`;
+        document.getElementById('mRowShareDelta').textContent = `Challenge Friction: ${s.pct}% | Defended: ${b.pct}%`;
+
+        document.getElementById('mRowAllowedVol').textContent = formatINR(a.volume_inr);
+        document.getElementById('mRowSteppedVol').textContent = formatINR(s.volume_inr);
+        document.getElementById('mRowBlockedVol').textContent = formatINR(b.volume_inr);
+        document.getElementById('mRowVolRatio').textContent = `${formatINR(cmp.money_intercepted_inr)} Intercepted`;
+
+        document.getElementById('mRowAllowedTicket').textContent = formatINR(a.avg_ticket_inr);
+        document.getElementById('mRowSteppedTicket').textContent = formatINR(s.avg_ticket_inr);
+        document.getElementById('mRowBlockedTicket').textContent = formatINR(b.avg_ticket_inr);
+        const ticketMultiplier = a.avg_ticket_inr > 0 ? (b.avg_ticket_inr / a.avg_ticket_inr).toFixed(1) : '1';
+        document.getElementById('mRowTicketDelta').textContent = `${ticketMultiplier}x Higher Value in Blocked`;
+
+        document.getElementById('mRowAllowedScore').textContent = `${a.avg_score || 0} / 100`;
+        document.getElementById('mRowSteppedScore').textContent = `${s.avg_score || 0} / 100`;
+        document.getElementById('mRowBlockedScore').textContent = `${b.avg_score || 0} / 100`;
+        document.getElementById('mRowScoreDelta').textContent = `+${cmp.score_delta_blocked_vs_allowed || 0} pts higher risk`;
+      } catch (err) {
+        console.error('loadStats error:', err);
+      }
+    }
+
+    async function loadModels() {
+      try {
+        const url = `${API_BASE}/models?engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const models = await res.json();
+
+        // Update Matrix rows with specific agent scores
+        if (models.transaction) {
+          document.getElementById('mRowAllowedTxn').textContent = models.transaction.allowed_avg;
+          document.getElementById('mRowSteppedTxn').textContent = models.transaction.stepped_up_avg;
+          document.getElementById('mRowBlockedTxn').textContent = models.transaction.blocked_avg;
+          document.getElementById('mRowTxnDelta').textContent = `+${models.transaction.discrimination_power} pts`;
+        }
+        if (models.behavior) {
+          document.getElementById('mRowAllowedBeh').textContent = models.behavior.allowed_avg;
+          document.getElementById('mRowSteppedBeh').textContent = models.behavior.stepped_up_avg;
+          document.getElementById('mRowBlockedBeh').textContent = models.behavior.blocked_avg;
+          document.getElementById('mRowBehDelta').textContent = `+${models.behavior.discrimination_power} pts`;
+        }
+        if (models.mule) {
+          document.getElementById('mRowAllowedMule').textContent = models.mule.allowed_avg;
+          document.getElementById('mRowSteppedMule').textContent = models.mule.stepped_up_avg;
+          document.getElementById('mRowBlockedMule').textContent = models.mule.blocked_avg;
+          document.getElementById('mRowMuleDelta').textContent = `+${models.mule.discrimination_power} pts`;
+        }
+        if (models.aml) {
+          document.getElementById('mRowAllowedAml').textContent = models.aml.allowed_avg;
+          document.getElementById('mRowSteppedAml').textContent = models.aml.stepped_up_avg;
+          document.getElementById('mRowBlockedAml').textContent = models.aml.blocked_avg;
+          document.getElementById('mRowAmlDelta').textContent = `+${models.aml.discrimination_power} pts`;
+        }
+
+        // Render Grouped Bar Chart
+        const labels = ['Transaction (XGBoost)', 'Behavior (IsoForest)', 'Velocity Spike', 'Graph Mule', 'AML Smurfing', 'Counsel Policy'];
+        const keys = ['transaction', 'behavior', 'velocity', 'mule', 'aml', 'counsel'];
+        const allowedVals = keys.map(k => models[k]?.allowed_avg || 0);
+        const steppedVals = keys.map(k => models[k]?.stepped_up_avg || 0);
+        const blockedVals = keys.map(k => models[k]?.blocked_avg || 0);
+
+        const ctx = document.getElementById('modelCompChart').getContext('2d');
+        if (modelCompChartInstance) modelCompChartInstance.destroy();
+
+        modelCompChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Allowed (Frictionless)',
+                data: allowedVals,
+                backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                borderColor: '#10b981',
+                borderWidth: 1,
+                borderRadius: 4
+              },
+              {
+                label: 'Stepped-Up (Challenged)',
+                data: steppedVals,
+                backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                borderRadius: 4
+              },
+              {
+                label: 'Blocked (Interception)',
+                data: blockedVals,
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: '#ef4444',
+                borderWidth: 1,
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.dataset.label}: ${ctx.raw} / 100`
+                }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true, max: 100, title: { display: true, text: 'Agent Risk Score (0-100)' } },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('loadModels error:', err);
+      }
+    }
+
+    async function loadDistribution() {
+      try {
+        const url = `${API_BASE}/distribution?engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const ctx = document.getElementById('scoreDistChart').getContext('2d');
+        if (scoreDistChartInstance) scoreDistChartInstance.destroy();
+
+        scoreDistChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.bins,
+            datasets: [
+              {
+                label: 'Allowed Payments (Low Risk)',
+                data: data.ALLOWED,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#10b981'
+              },
+              {
+                label: 'Stepped-Up (Mid Range)',
+                data: data.STEPPED_UP,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#f59e0b'
+              },
+              {
+                label: 'Blocked (High Threat)',
+                data: data.BLOCKED,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#ef4444'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  title: ctx => `Risk Score Range: ${ctx[0].label}`
+                }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'Transaction Volume' } },
+              x: { title: { display: true, text: 'Model Overall Risk Score Bins (0-100)' }, grid: { display: false } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('loadDistribution error:', err);
+      }
+    }
+
+    async function loadTypologies() {
+      try {
+        const url = `${API_BASE}/typologies?engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const rows = await res.json();
+
+        const labels = rows.map(r => r.typology_name.split('/')[0].trim());
+        const allowed = rows.map(r => r.allowed_count);
+        const stepped = rows.map(r => r.stepped_up_count);
+        const blocked = rows.map(r => r.blocked_count);
+
+        const ctx = document.getElementById('typologyChart').getContext('2d');
+        if (typologyChartInstance) typologyChartInstance.destroy();
+
+        typologyChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Allowed',
+                data: allowed,
+                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                borderColor: '#10b981',
+                borderWidth: 1
+              },
+              {
+                label: 'Stepped-Up',
+                data: stepped,
+                backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                borderColor: '#f59e0b',
+                borderWidth: 1
+              },
+              {
+                label: 'Blocked',
+                data: blocked,
+                backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                borderColor: '#ef4444',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+            },
+            scales: {
+              x: { stacked: true, beginAtZero: true, title: { display: true, text: 'Transactions' } },
+              y: { stacked: true, grid: { display: false } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('loadTypologies error:', err);
+      }
+    }
+
+    async function loadTimeline() {
+      try {
+        const url = `${API_BASE}/timeseries?engine_filter=${encodeURIComponent(currentEngineFilter)}&points=24`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const ctx = document.getElementById('timelineChart').getContext('2d');
+        if (timelineChartInstance) timelineChartInstance.destroy();
+
+        timelineChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                label: 'Allowed',
+                data: data.ALLOWED,
+                borderColor: '#10b981',
+                backgroundColor: '#10b981',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3
+              },
+              {
+                label: 'Stepped-Up',
+                data: data.STEPPED_UP,
+                borderColor: '#f59e0b',
+                backgroundColor: '#f59e0b',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3
+              },
+              {
+                label: 'Blocked',
+                data: data.BLOCKED,
+                borderColor: '#ef4444',
+                backgroundColor: '#ef4444',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+            },
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'Txn / Period' } },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+      } catch (err) {
+        console.error('loadTimeline error:', err);
+      }
+    }
+
+    async function loadSignals() {
+      try {
+        const url = `${API_BASE}/signals?engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const signals = await res.json();
+
+        const grid = document.getElementById('signalsGrid');
+        grid.innerHTML = signals.map(s => `
+          <div class="signal-item">
+            <div class="signal-name">${s.name}</div>
+            <div class="signal-bars">
+              <div class="signal-bar-row">
+                <span style="color: var(--green); width: 68px;">Allowed:</span>
+                <div class="bar-track">
+                  <div class="bar-fill-allowed" style="width: ${Math.min(s.allowed_pct, 100)}%;"></div>
+                </div>
+                <span class="mono" style="width: 40px; text-align: right;">${s.allowed_pct}%</span>
+              </div>
+              <div class="signal-bar-row">
+                <span style="color: var(--amber); width: 68px;">Stepped:</span>
+                <div class="bar-track">
+                  <div class="bar-fill-stepped" style="width: ${Math.min(s.stepped_up_pct, 100)}%;"></div>
+                </div>
+                <span class="mono" style="width: 40px; text-align: right;">${s.stepped_up_pct}%</span>
+              </div>
+              <div class="signal-bar-row">
+                <span style="color: var(--red); width: 68px;">Blocked:</span>
+                <div class="bar-track">
+                  <div class="bar-fill-blocked" style="width: ${Math.min(s.blocked_pct, 100)}%;"></div>
+                </div>
+                <span class="mono" style="width: 40px; text-align: right;">${s.blocked_pct}%</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('loadSignals error:', err);
+      }
+    }
+
+    async function loadTransactions() {
+      try {
+        let url = `${API_BASE}/transactions?limit=60`;
+        if (currentCategoryFilter !== 'ALL') url += `&category=${encodeURIComponent(currentCategoryFilter)}`;
+        if (currentEngineFilter !== 'ALL') url += `&engine_filter=${encodeURIComponent(currentEngineFilter)}`;
+        if (currentTypologyFilter !== 'ALL') url += `&typology=${encodeURIComponent(currentTypologyFilter)}`;
+        if (currentSearchQuery) url += `&search=${encodeURIComponent(currentSearchQuery)}`;
+
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        const tbody = document.getElementById('txnTableBody');
+
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--muted); padding: 24px;">No evaluated transactions match the selected filters.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.items.map(t => {
+          const badgeClass = t.category === 'ALLOWED' ? 'badge-allowed' : (t.category === 'STEPPED_UP' ? 'badge-stepped' : 'badge-blocked');
+          const scoreClass = t.overall_score < 35 ? 'score-low' : (t.overall_score < 75 ? 'score-mid' : 'score-high');
+          const timeStr = t.iso_time ? new Date(t.iso_time).toLocaleTimeString('en-IN', { hour12: false }) : '-';
+
+          const ag = t.agent_scores || {};
+          const sparkColor = s => s < 35 ? 'var(--green)' : (s < 75 ? 'var(--amber)' : 'var(--red)');
+
+          return `
+            <tr>
+              <td class="mono" style="font-weight: 700; color: var(--accent); cursor: pointer;" onclick="openTelemetryModal('${t.txn_id}')">${t.txn_id}</td>
+              <td class="mono" style="color: var(--muted);">${timeStr}</td>
+              <td>
+                <span style="color: #fff; font-weight: 500;">${t.payer}</span>
+                <span style="color: var(--muted); margin: 0 4px;">→</span>
+                <span style="color: #cbd5e1;">${t.payee}</span>
+              </td>
+              <td class="mono" style="font-weight: 700;">₹${Number(t.amount).toLocaleString('en-IN')}</td>
+              <td><span style="font-size: 11px; color: var(--muted);">${t.typology_name || t.typology}</span></td>
+              <td>
+                <div class="agent-spark" title="Txn: ${ag.transaction || 0} | Beh: ${ag.behavior || 0} | Vel: ${ag.velocity || 0} | Mule: ${ag.mule || 0} | AML: ${ag.aml || 0}">
+                  <span class="spark-bar" style="background: ${sparkColor(ag.transaction)}; height: ${Math.max(6, (ag.transaction||0)*0.16)}px;"></span>
+                  <span class="spark-bar" style="background: ${sparkColor(ag.behavior)}; height: ${Math.max(6, (ag.behavior||0)*0.16)}px;"></span>
+                  <span class="spark-bar" style="background: ${sparkColor(ag.velocity)}; height: ${Math.max(6, (ag.velocity||0)*0.16)}px;"></span>
+                  <span class="spark-bar" style="background: ${sparkColor(ag.mule)}; height: ${Math.max(6, (ag.mule||0)*0.16)}px;"></span>
+                  <span class="spark-bar" style="background: ${sparkColor(ag.aml)}; height: ${Math.max(6, (ag.aml||0)*0.16)}px;"></span>
+                  <span class="mono" style="font-size: 10px; color: var(--muted); margin-left: 4px;">${ag.transaction||0}·${ag.behavior||0}·${ag.mule||0}</span>
+                </div>
+              </td>
+              <td><span class="score-badge mono ${scoreClass}">${t.overall_score}</span></td>
+              <td><span class="kpi-badge ${badgeClass}">${t.category}</span></td>
+              <td>
+                <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="openTelemetryModal('${t.txn_id}')">Inspect</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('loadTransactions error:', err);
+      }
+    }
+
+    // Modal Inspection
+    async function openTelemetryModal(txnId) {
+      try {
+        const res = await fetch(`${API_BASE}/transactions/${txnId}`);
+        if (!res.ok) return;
+        const t = await res.json();
+
+        document.getElementById('modalTxnId').textContent = t.txn_id;
+        document.getElementById('modalTime').textContent = t.iso_time ? new Date(t.iso_time).toLocaleString('en-IN') : '-';
+        document.getElementById('modalPayer').textContent = t.payer;
+        document.getElementById('modalPayee').textContent = t.payee;
+        document.getElementById('modalAmount').textContent = `₹${Number(t.amount).toLocaleString('en-IN')}`;
+        document.getElementById('modalChannel').textContent = t.channel;
+        document.getElementById('modalEngine').textContent = t.source_engine;
+        document.getElementById('modalScore').textContent = t.overall_score;
+        document.getElementById('modalLatency').textContent = `${t.latency_ms} ms`;
+        document.getElementById('modalTypology').textContent = `${t.typology} — ${t.typology_name}`;
+        document.getElementById('modalReason').textContent = `Policy Routing Rationale: ${t.reason || 'Decision reached via multi-agent score fusion'}`;
+
+        const badge = document.getElementById('modalDecisionBadge');
+        badge.className = `kpi-badge ${t.category === 'ALLOWED' ? 'badge-allowed' : (t.category === 'STEPPED_UP' ? 'badge-stepped' : 'badge-blocked')}`;
+        badge.textContent = `${t.category} (${t.raw_decision})`;
+
+        // Agent scores list in modal
+        const ag = t.agent_scores || {};
+        const agentNames = {
+          transaction: 'Transaction Agent (XGBoost Classifier)',
+          behavior: 'Behavior Agent (Isolation Forest Anomaly)',
+          velocity: 'Velocity Agent (Frequency & Bursts)',
+          mule: 'Mule Agent (Graph PageRank & Clustering)',
+          aml: 'AML Agent (Structuring & Smurfing)',
+          counsel: 'Counsel Agent (Legitimacy & Baseline Weight)'
+        };
+
+        const agentBarsEl = document.getElementById('modalAgentBars');
+        agentBarsEl.innerHTML = Object.keys(agentNames).map(k => {
+          const val = ag[k] || 0;
+          const color = val < 35 ? 'var(--green)' : (val < 75 ? 'var(--amber)' : 'var(--red)');
+          return `
+            <div style="font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span style="color: var(--text);">${agentNames[k]}</span>
+                <span class="mono" style="font-weight: 700; color: ${color};">${val} / 100</span>
+              </div>
+              <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                <div style="height: 100%; width: ${val}%; background: ${color}; border-radius: 3px;"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Triggered signals
+        const sigsEl = document.getElementById('modalSignalsList');
+        const signals = t.signals || {};
+        const activeSignals = Object.entries(signals).filter(([_, v]) => Boolean(v));
+        if (activeSignals.length === 0) {
+          sigsEl.innerHTML = `<span style="font-size: 12px; color: var(--green);">No anomalous behavioral flags detected (Normal Session).</span>`;
+        } else {
+          sigsEl.innerHTML = activeSignals.map(([k, _]) => `
+            <span class="kpi-badge badge-blocked" style="font-size: 11px;">⚠️ ${k.replace(/_/g, ' ').toUpperCase()}</span>
+          `).join('');
+        }
+
+        document.getElementById('telemetryModal').classList.add('open');
+      } catch (err) {
+        console.error('openTelemetryModal error:', err);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('telemetryModal').classList.remove('open');
+    }
+    function closeModalOnBackdrop(e) {
+      if (e.target === document.getElementById('telemetryModal')) closeModal();
+    }
+
+    // Filter Handlers
+    function setCategoryFilter(cat) {
+      currentCategoryFilter = cat;
+      ['pillAll', 'pillAllowed', 'pillStepped', 'pillBlocked'].forEach(id => {
+        document.getElementById(id).classList.remove('active');
+      });
+      if (cat === 'ALL') document.getElementById('pillAll').classList.add('active');
+      if (cat === 'ALLOWED') document.getElementById('pillAllowed').classList.add('active');
+      if (cat === 'STEPPED_UP') document.getElementById('pillStepped').classList.add('active');
+      if (cat === 'BLOCKED') document.getElementById('pillBlocked').classList.add('active');
+      loadTransactions();
+    }
+
+    function applyEngineFilter() {
+      currentEngineFilter = document.getElementById('engineFilterSelect').value;
+      refreshAllData();
+    }
+
+    function applyFilters() {
+      currentTypologyFilter = document.getElementById('typologyFilterSelect').value;
+      loadTransactions();
+    }
+
+    let searchDebounce = null;
+    function handleSearch() {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        currentSearchQuery = document.getElementById('searchInput').value.trim();
+        loadTransactions();
+      }, 250);
+    }
+
+    // Simulation & Live Sync Controls
+    function toggleSimMenu(e) {
+      e.stopPropagation();
+      document.getElementById('simMenu').classList.toggle('open');
+    }
+    window.addEventListener('click', () => {
+      document.getElementById('simMenu').classList.remove('open');
+    });
+
+    async function triggerSimulate(scenario, count) {
+      document.getElementById('simMenu').classList.remove('open');
+      showToast(`Simulating ${count} payments under '${scenario}'...`, '⏳');
+      try {
+        const res = await fetch(`${API_BASE}/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario, count })
+        });
+        if (res.ok) {
+          showToast(`Successfully simulated ${count} transactions! Models updated.`, '🚀');
+          refreshAllData();
+        }
+      } catch (e) {
+        showToast('Simulation request failed.', '❌');
+      }
+    }
+
+    async function triggerSync() {
+      const btn = document.getElementById('syncBtnText');
+      btn.textContent = 'Syncing...';
+      showToast('Syncing live transactions from Project 1 & Project 2...', '⏳');
+      try {
+        const res = await fetch(`${API_BASE}/sync`, { method: 'POST' });
+        if (res.ok) {
+          const d = await res.json();
+          showToast(`Ingested ${d.synced_project1} from P1 and ${d.synced_project2} from P2!`, '⚡');
+          refreshAllData();
+        }
+      } catch (e) {
+        showToast('Sync failed: check if Project 1 & 2 are running.', '⚠️');
+      } finally {
+        btn.textContent = 'Sync P1 & P2 Data';
+      }
+    }
+
+    function refreshAllData() {
+      loadStats();
+      loadModels();
+      loadDistribution();
+      loadTypologies();
+      loadTimeline();
+      loadSignals();
+      loadTransactions();
+    }
+
+    function exportDataCSV() {
+      fetch(`${API_BASE}/transactions?limit=500`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.items || data.items.length === 0) {
+            showToast('No data available to export.', '⚠️');
+            return;
+          }
+          const headers = ['txn_id', 'timestamp', 'payer', 'payee', 'amount', 'category', 'raw_decision', 'overall_score', 'typology', 'source_engine'];
+          const csvRows = [headers.join(',')];
+          data.items.forEach(t => {
+            csvRows.push([
+              t.txn_id,
+              `"${t.iso_time || ''}"`,
+              `"${t.payer}"`,
+              `"${t.payee}"`,
+              t.amount,
+              t.category,
+              t.raw_decision,
+              t.overall_score,
+              `"${t.typology}"`,
+              `"${t.source_engine}"`
+            ].join(','));
+          });
+          const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `agentguard_model_analytics_${Date.now()}.csv`;
+          a.click();
+          showToast('CSV export downloaded successfully!', '📥');
+        });
+    }
+
+    // Initial Load & Auto-Refresh
+    window.addEventListener('DOMContentLoaded', () => {
+      refreshAllData();
+      autoRefreshTimer = setInterval(refreshAllData, 8000);
+    });
+  </script>
+</body>
+</html>

@@ -45,6 +45,7 @@
 - **Port 9000:** Unified Gateway (Public Facing Entrypoint).
 - **Port 8001:** Project 1 Backend (Internal).
 - **Port 8002:** Project 2 Backend (Internal).
+- **Port 8003:** Project 3 Backend (Internal).
 
 ---
 
@@ -65,13 +66,19 @@ agentguard-suite/
 │   │   ├── static/index.html   # Live 6-Agent real-time dashboard UI
 │   │   ├── requirements.txt    # ML and core dependencies
 │   │   └── README.md
-│   └── project2/               # Project 2: Money Map Console (Port 8002)
-│       ├── backend/            # FastAPI app, policy engine, memory graph, static dashboard
-│       ├── pytest.ini          # Test runner config
-│       ├── requirements.txt    # Web framework dependencies
+│   ├── project2/               # Project 2: Money Map Console (Port 8002)
+│   │   ├── backend/            # FastAPI app, policy engine, memory graph, static dashboard
+│   │   ├── pytest.ini          # Test runner config
+│   │   ├── requirements.txt    # Web framework dependencies
+│   │   └── README.md
+│   └── project3/               # Project 3: Model Analytics & Decision Intelligence (Port 8003)
+│       ├── backend/            # FastAPI analytics aggregator, normalization & simulation engine
+│       ├── static/index.html   # Comparative model analytics & decision matrix dashboard
+│       ├── requirements.txt    # Analytics service dependencies
 │       └── README.md
 ├── tests/
-│   └── test_integration.py     # End-to-end pytest suite for Gateway, RBAC, and Proxy
+│   ├── test_integration.py     # End-to-end pytest suite for Gateway, RBAC, and Proxy
+│   └── verify_live.py          # Live system verification script
 ├── run.bat                     # Master one-click startup launcher
 ├── stop.bat                    # Master clean shutdown script
 └── INTEGRATION.md              # Architectural documentation
@@ -83,7 +90,7 @@ agentguard-suite/
 
 ### Authentication & Token Flow
 1. **Login (`POST /auth/login`):**
-   - Payload: `{ "username": "...", "password": "...", "project": "project1" | "project2" }`
+   - Payload: `{ "username": "...", "password": "...", "project": "project1" | "project2" | "project3" }`
    - Validates user and checks PBKDF2-SHA256 password hash.
    - Enforces RBAC: verifies requested project is in `user.allowed_projects`.
    - Generates an HMAC-SHA256 signed token (valid for 8 hours) containing `{ sub, allowed_projects, exp, iat }`.
@@ -101,9 +108,10 @@ agentguard-suite/
 
 | Username | Password | Role / Title | Allowed Projects | Access Permission |
 | :--- | :--- | :--- | :--- | :--- |
-| **`admin`** | `admin123` | Master Administrator | `project1`, `project2` | Full access to both platforms |
-| **`analyst1`** | `analyst123` | UPI Fraud Interception Analyst | `project1` | Access to Project 1 only (403 on Project 2) |
-| **`analyst2`** | `analyst234` | Money Map & Network Analyst | `project2` | Access to Project 2 only (403 on Project 1) |
+| **`admin`** | `admin123` | Master Administrator | `project1`, `project2`, `project3` | Full access to all three platforms |
+| **`analyst1`** | `analyst123` | UPI Fraud Interception Analyst | `project1` | Access to Project 1 only (403 on P2/P3) |
+| **`analyst2`** | `analyst234` | Money Map & Network Analyst | `project2` | Access to Project 2 only (403 on P1/P3) |
+| **`analyst3`** | `analyst345` | Model Analytics Lead | `project3` | Access to Project 3 only (403 on P1/P2) |
 
 ---
 
@@ -115,17 +123,19 @@ agentguard-suite/
 | :--- | :--- | :---: | :--- |
 | `/` | `portal/index.html` | No | Unified Login & Project Selector Portal |
 | `/switch-widget.js` | `portal/switch-widget.js` | No | Floating project switch & logout widget |
-| `/health` | Gateway + Backends | No | Aggregated health status of all 3 services |
+| `/health` | Gateway + Backends | No | Aggregated health status of all 4 services |
 | `/p1/` | `projects/project1/static/index.html` | Yes (`project1`) | Project 1 Live 6-Agent Interceptor UI |
 | `/p1/api/*` | `http://127.0.0.1:8001/*` | Yes (`project1`) | Project 1 REST API Proxy (Prefix stripped) |
 | `/p1/api/ws/feed` | `ws://127.0.0.1:8001/ws/feed` | Yes (`project1`) | Project 1 Live WebSocket Stream Proxy |
 | `/p2/` | `projects/project2/backend/static/index.html` | Yes (`project2`) | Project 2 Money Map & Policy Console UI |
 | `/p2/api/*` | `http://127.0.0.1:8002/*` | Yes (`project2`) | Project 2 REST API Proxy (Prefix stripped) |
+| `/p3/` | `projects/project3/static/index.html` | Yes (`project3`) | Project 3 Model Analytics & Decision Dashboard |
+| `/p3/api/*` | `http://127.0.0.1:8003/*` | Yes (`project3`) | Project 3 Analytics REST API Proxy |
 
 ### Dynamic API Base Path Configuration
 - Frontend JavaScript files resolve their API base dynamically using:
   ```javascript
-  const API_BASE = window.API_BASE_URL || (location.pathname.startsWith('/p1') ? '/p1/api' : (location.pathname.startsWith('/p2') ? '/p2/api' : ''));
+  const API_BASE = window.API_BASE_URL || (location.pathname.startsWith('/p1') ? '/p1/api' : (location.pathname.startsWith('/p2') ? '/p2/api' : (location.pathname.startsWith('/p3') ? '/p3/api' : '')));
   ```
 - All relative HTTP calls and WebSocket handshakes route through the Gateway on Port 9000, ensuring unified auth without cross-origin issues.
 

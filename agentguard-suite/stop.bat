@@ -8,7 +8,7 @@ echo                           Stopping AgentGuard Suite
 echo ===============================================================================
 echo.
 
-set PORTS=9000 8001 8002
+set PORTS=9000 8001 8002 8003
 
 for %%P in (%PORTS%) do (
     echo [INFO] Checking for processes listening on port %%P...

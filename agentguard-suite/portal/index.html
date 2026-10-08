@@ -38,7 +38,7 @@
 
     .portal-container {
       width: 100%;
-      max-width: 960px;
+      max-width: 1180px;
       display: flex;
       flex-direction: column;
       gap: 24px;
@@ -87,6 +87,7 @@
       font-size: 12px;
       color: var(--muted);
       margin-top: 10px;
+      flex-wrap: wrap;
     }
     .health-item {
       display: flex;
@@ -103,10 +104,10 @@
     /* Project Cards Grid */
     .cards-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 20px;
     }
-    @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 990px) { .cards-grid { grid-template-columns: 1fr; } }
 
     .proj-card {
       background: var(--card-bg);
@@ -174,6 +175,7 @@
     }
     .badge-p1 { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
     .badge-p2 { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-p3 { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
 
     .proj-title {
       font-size: 18px;
@@ -326,6 +328,10 @@
           <span>Project 2 Money Map (:8002)</span>
         </div>
         <div class="health-item">
+          <span class="dot" id="dotP3"></span>
+          <span>Project 3 Analytics (:8003)</span>
+        </div>
+        <div class="health-item">
           <span class="dot" id="dotGw"></span>
           <span>Gateway (:9000)</span>
         </div>
@@ -372,6 +378,24 @@
           <span class="feat-tag">Risk Profiling</span>
         </div>
       </div>
+
+      <!-- Project 3 Card -->
+      <div class="proj-card" id="cardP3" onclick="selectProject('project3')">
+        <div class="proj-header">
+          <div class="proj-icon">📊</div>
+          <span class="proj-badge badge-p3">Project 3</span>
+        </div>
+        <div class="proj-title">Model Analytics & Decision Intelligence</div>
+        <div class="proj-desc">
+          Unified model evaluation intelligence. Analyzes all data seen across AI models, comparing Stepped-Up friction challenges and Blocked threat interceptions directly against Allowed baselines.
+        </div>
+        <div class="proj-features">
+          <span class="feat-tag">Stepped & Blocked vs Allowed</span>
+          <span class="feat-tag">Multi-Model Radar</span>
+          <span class="feat-tag">Typology Matrix</span>
+          <span class="feat-tag">Threat Signals</span>
+        </div>
+      </div>
     </div>
 
     <!-- Auth Form Box -->
@@ -396,10 +420,11 @@
 
         <div class="demo-creds">
           <span>Quick Demo Logins:</span>
-          <div style="display: flex; gap: 6px;">
-            <button type="button" class="cred-btn" onclick="fillCreds('admin', 'admin123')">admin (both)</button>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="cred-btn" onclick="fillCreds('admin', 'admin123')">admin (all)</button>
             <button type="button" class="cred-btn" onclick="fillCreds('analyst1', 'analyst123')">analyst1 (p1 only)</button>
             <button type="button" class="cred-btn" onclick="fillCreds('analyst2', 'analyst234')">analyst2 (p2 only)</button>
+            <button type="button" class="cred-btn" onclick="fillCreds('analyst3', 'analyst345')">analyst3 (p3 only)</button>
           </div>
         </div>
       </form>
@@ -432,6 +457,7 @@
       selectedProject = proj;
       document.getElementById('cardP1').classList.toggle('selected', proj === 'project1');
       document.getElementById('cardP2').classList.toggle('selected', proj === 'project2');
+      document.getElementById('cardP3').classList.toggle('selected', proj === 'project3');
     }
 
     function fillCreds(u, p) {
@@ -439,6 +465,7 @@
       document.getElementById('password').value = p;
       if (u === 'analyst1') selectProject('project1');
       if (u === 'analyst2') selectProject('project2');
+      if (u === 'analyst3') selectProject('project3');
     }
 
     function showError(msg) {
@@ -463,11 +490,14 @@
           // Update card disabled states based on permissions
           const p1Allowed = user.allowed_projects.includes('project1');
           const p2Allowed = user.allowed_projects.includes('project2');
+          const p3Allowed = user.allowed_projects.includes('project3');
 
           document.getElementById('cardP1').classList.toggle('disabled', !p1Allowed);
           document.getElementById('cardP2').classList.toggle('disabled', !p2Allowed);
+          document.getElementById('cardP3').classList.toggle('disabled', !p3Allowed);
 
-          if (!p1Allowed && p2Allowed) selectProject('project2');
+          if (!p1Allowed && !p2Allowed && p3Allowed) selectProject('project3');
+          else if (!p1Allowed && p2Allowed) selectProject('project2');
           else if (p1Allowed) selectProject('project1');
         }
       } catch(e) {}
@@ -496,7 +526,7 @@
         }
 
         // Redirect to selected project
-        window.location.href = selectedProject === 'project1' ? '/p1/' : '/p2/';
+        window.location.href = selectedProject === 'project1' ? '/p1/' : (selectedProject === 'project2' ? '/p2/' : '/p3/');
       } catch(err) {
         showError(err.message);
         btn.disabled = false;
@@ -505,7 +535,7 @@
     }
 
     function launchSelected() {
-      window.location.href = selectedProject === 'project1' ? '/p1/' : '/p2/';
+      window.location.href = selectedProject === 'project1' ? '/p1/' : (selectedProject === 'project2' ? '/p2/' : '/p3/');
     }
 
     async function handleLogout() {
@@ -523,6 +553,7 @@
           document.getElementById('dotGw').className = 'dot';
           document.getElementById('dotP1').className = `dot ${data.project1?.status === 'ok' ? '' : 'down'}`;
           document.getElementById('dotP2').className = `dot ${data.project2?.status === 'ok' ? '' : 'down'}`;
+          document.getElementById('dotP3').className = `dot ${data.project3?.status === 'ok' ? '' : 'down'}`;
         }
       } catch(e) {
         document.getElementById('dotGw').className = 'dot down';
